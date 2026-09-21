@@ -209,7 +209,7 @@ select.form-input option{background:var(--surface);color:var(--text)}
 .activity-time{font-size:.68rem;color:var(--text-3);font-variant-numeric:tabular-nums}
 
 /* ── RESULTS SECTION ────────────────────────────────────── */
-#results-section{padding:calc(var(--nav-h)+var(--2xl)) 0 var(--3xl);animation:fiu .6s ease forwards}
+#results-section{padding:calc(var(--nav-h) + var(--2xl)) 0 var(--3xl);animation:fiu .6s ease forwards}
 @keyframes fiu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .results-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--lg);margin-bottom:var(--xl);flex-wrap:wrap}
 .results-heading{font-family:var(--font-d);font-size:clamp(1.6rem,3vw,2.4rem);font-weight:700;margin-bottom:var(--sm)}

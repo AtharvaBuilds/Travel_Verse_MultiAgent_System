@@ -355,3 +355,6 @@ function clearFormError() {
     const el = document.getElementById('form-error');
     if (el) el.hidden = true;
 }
+
+// Fix API link for split deployment
+document.getElementById('nav-api-link').href = API_BASE + '/api/docs';
