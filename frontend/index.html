@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="AI Travel Planner — 6 intelligent agents plan your perfect trip: flights, weather, budget, itinerary and more.">
+<meta name="theme-color" content="#7c6fed">
+<title>AJ's Travel Planner — Plan Your Dream Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="/static/css/style.css?v=7">
+<!-- Deployment config — update API_BASE in this file for Render+Vercel split deploy -->
+<script src="/static/js/config.js"></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <div class="nav-container">
+    <a href="/" class="nav-logo" aria-label="Home">
+      <span class="logo-icon">✈️</span>
+      <span class="logo-text">AJ’s TravelVerse</span>
+    </a>
+    <div class="nav-actions">
+      <a href="/api/docs" class="btn btn-ghost btn-sm" target="_blank" rel="noopener" aria-label="API docs">API</a>
+      <button id="theme-toggle" class="btn-icon-only" aria-label="Toggle theme">
+        <span class="theme-icon-dark">🌙</span>
+        <span class="theme-icon-light" hidden>☀️</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══════════════ SECTION 1: HERO + FORM ═══════════════ -->
+<section id="hero-section" aria-label="Trip planning">
+  <div class="hero-bg" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="container hero-grid">
+
+    <!-- Hero copy -->
+    <div class="hero-content">
+      <div class="hero-badge"><span class="badge-dot"></span>Powered by 6 AI Agents</div>
+      <h1 class="hero-title">Plan Your<br><span class="gradient-text">Dream Journey</span></h1>
+      <p class="hero-subtitle">Six specialist AI agents research destinations, find flights, check weather, convert budgets and craft your perfect itinerary — all in one go.</p>
+      <div class="agent-pills" aria-label="Available agents">
+        <span class="agent-pill">📍 Destination</span>
+        <span class="agent-pill">✈️ Flights</span>
+        <span class="agent-pill">🌤️ Weather</span>
+        <span class="agent-pill">💱 Exchange</span>
+        <span class="agent-pill">💰 Budget</span>
+        <span class="agent-pill">🗓️ Itinerary</span>
+      </div>
+    </div>
+
+    <!-- Planning form -->
+    <div class="planning-card glass">
+      <div class="card-header">
+        <h2 class="card-title">Let's Plan Your Trip</h2>
+        <p class="card-subtitle">Tell us about your dream journey</p>
+      </div>
+
+      <form id="trip-form" novalidate aria-label="Trip planning form">
+
+        <!-- Row 1: Origin & Destination -->
+        <div class="form-row form-row-swap">
+          <div class="form-group">
+            <label for="origin_city" class="form-label">🏠 Origin City</label>
+            <input type="text" id="origin_city" class="form-input" placeholder="e.g. Mumbai" autocomplete="off" required aria-required="true">
+          </div>
+          <div class="swap-icon" aria-hidden="true">⇄</div>
+          <div class="form-group">
+            <label for="destination_city" class="form-label">📍 Destination</label>
+            <input type="text" id="destination_city" class="form-input" placeholder="e.g. Dubai" autocomplete="off" required aria-required="true">
+          </div>
+        </div>
+
+        <!-- Row 2: Date / Travelers / Nights -->
+        <div class="form-row form-row-3">
+          <div class="form-group">
+            <label for="start_date" class="form-label">📅 Start Date</label>
+            <input type="date" id="start_date" class="form-input">
+          </div>
+          <div class="form-group">
+            <label for="travelers" class="form-label">👥 Travelers</label>
+            <input type="number" id="travelers" class="form-input" min="1" max="50" value="1">
+          </div>
+          <div class="form-group">
+            <label for="no_of_nights" class="form-label">🌙 Nights</label>
+            <input type="number" id="no_of_nights" class="form-input" min="1" max="60" value="5" required aria-required="true">
+          </div>
+        </div>
+
+        <!-- Row 3: Budget & Accommodation -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="budget" class="form-label">₹ Budget (INR)</label>
+            <div class="input-with-prefix">
+              <span class="input-prefix" aria-hidden="true">₹</span>
+              <input type="number" id="budget" class="form-input" min="1000" step="1000" placeholder="e.g. 150000" required aria-required="true">
+            </div>
+            <span class="form-hint">Total trip budget in Indian Rupees</span>
+          </div>
+          <div class="form-group">
+            <label for="accommodation_preference" class="form-label">🏨 Accommodation</label>
+            <select id="accommodation_preference" class="form-input">
+              <option value="any">Any (Surprise me!)</option>
+              <option value="budget">Budget / Hostel</option>
+              <option value="mid-range">Mid-range (3★)</option>
+              <option value="luxury">Luxury (4-5★)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="form-error" class="form-error-msg" role="alert" aria-live="polite" hidden></div>
+
+        <!-- CTA -->
+        <button type="submit" class="btn btn-primary btn-xl" id="plan-btn">
+          <span class="btn-spinner hidden" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35" stroke-dashoffset="10">
+                <animateTransform attributeName="transform" type="rotate" dur="0.8s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/>
+              </circle>
+            </svg>
+          </span>
+          <span class="btn-icon">✨</span>
+          <span class="btn-text">Plan My Trip</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </form>
+    </div>
+
+  </div><!-- /hero-grid -->
+
+  <!-- ── Infinite scrolling gallery — full width, below both columns ── -->
+  <div class="container">
+    <div class="hero-gallery" id="hero-gallery-wrap">
+      <div class="hero-gallery-label">✨ Popular destinations</div>
+      <div class="hero-marquee-outer">
+        <div class="hero-marquee-track" id="hero-marquee-track">
+          <!-- JS inserts cards here (doubled for seamless loop) -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════ SECTION 2: AGENT PROGRESS ═══════════════ -->
+<section id="progress-section" hidden aria-label="AI agent progress" aria-live="polite">
+  <div class="container">
+
+    <div class="progress-header">
+      <div class="progress-header-top">
+        <button class="btn btn-ghost btn-sm progress-cancel-btn" id="progress-cancel-btn">← New Trip</button>
+      </div>
+      <div class="ai-indicator">
+        <div class="pulse-ring" aria-hidden="true"></div>
+        <div>
+          <div class="ai-indicator-title">Your AI agents are working on your trip…</div>
+          <div class="ai-indicator-sub" id="ai-current-task">Initialising agents…</div>
+        </div>
+      </div>
+      <div class="progress-bar-wrap" aria-hidden="true">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
+        </div>
+        <span class="progress-bar-label" id="progress-bar-label">0 / 6 agents done</span>
+      </div>
+    </div>
+
+    <div class="progress-layout">
+      <!-- Agent list -->
+      <div class="agent-progress-panel">
+        <p class="panel-title">Agent Queue</p>
+        <div class="agent-list" id="agent-list" role="list">
+
+          <!-- destination -->
+          <div class="agent-item" data-agent="destination" data-status="pending" role="listitem">
+            <div class="agent-icon-wrap" aria-hidden="true">
+              <span class="status-pending-icon">○</span>
+              <span class="status-running-icon hidden"><svg class="spin-svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35" stroke-dashoffset="10"><animateTransform attributeName="transform" type="rotate" dur="0.8s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/></circle></svg></span>
+              <span class="status-done-icon hidden">✓</span>
+              <span class="status-error-icon hidden">✗</span>
+            </div>
+            <div class="agent-label-wrap"><span class="agent-emoji">📍</span><div><div class="agent-name">Destination Research</div><div class="agent-desc">Researching destination &amp; airports</div></div></div>
+          </div>
+
+          <!-- flight -->
+          <div class="agent-item" data-agent="flight" data-status="pending" role="listitem">
+            <div class="agent-icon-wrap" aria-hidden="true">
+              <span class="status-pending-icon">○</span>
+              <span class="status-running-icon hidden"><svg class="spin-svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35" stroke-dashoffset="10"><animateTransform attributeName="transform" type="rotate" dur="0.8s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/></circle></svg></span>
+              <span class="status-done-icon hidden">✓</span>
+              <span class="status-error-icon hidden">✗</span>
+            </div>
+            <div class="agent-label-wrap"><span class="agent-emoji">✈️</span><div><div class="agent-name">Flight Search</div><div class="agent-desc">Searching for available flights</div></div></div>
+          </div>
+
+          <!-- weather -->
+          <div class="agent-item" data-agent="weather" data-status="pending" role="listitem">
+            <div class="agent-icon-wrap" aria-hidden="true">
+              <span class="status-pending-icon">○</span>
+              <span class="status-running-icon hidden"><svg class="spin-svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35" stroke-dashoffset="10"><animateTransform attributeName="transform" type="rotate" dur="0.8s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/></circle></svg></span>
+              <span class="status-done-icon hidden">✓</span>
+              <span class="status-error-icon hidden">✗</span>
+            </div>
+            <div class="agent-label-wrap"><span class="agent-emoji">🌤️</span><div><div class="agent-name">Weather Analysis</div><div class="agent-desc">Checking weather conditions</div></div></div>
+          </div>
+
+          <!-- exchange_rate -->
+          <div class="agent-item" data-agent="exchange_rate" data-status="pending" role="listitem">
+            <div class="agent-icon-wrap" aria-hidden="true">
+              <span class="status-pending-icon">○</span>
+              <span class="status-running-icon hidden"><svg class="spin-svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35" stroke-dashoffset="10"><animateTransform attributeName="transform" type="rotate" dur="0.8s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/></circle></svg></span>
+              <span class="status-done-icon hidden">✓</span>
+              <span class="status-error-icon hidden">✗</span>
+            </div>
+            <div class="agent-label-wrap"><span class="agent-emoji">💱</span><div><div class="agent-name">Exchange Rates</div><div class="agent-desc">Fetching INR → USD conversion</div></div></div>
+          </div>
+
+          <!-- budget_calculation -->
+          <div class="agent-item" data-agent="budget_calculation" data-status="pending" role="listitem">
+            <div class="agent-icon-wrap" aria-hidden="true">
+              <span class="status-pending-icon">○</span>
+              <span class="status-running-icon hidden"><svg class="spin-svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35" stroke-dashoffset="10"><animateTransform attributeName="transform" type="rotate" dur="0.8s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/></circle></svg></span>
+              <span class="status-done-icon hidden">✓</span>
+              <span class="status-error-icon hidden">✗</span>
+            </div>
+            <div class="agent-label-wrap"><span class="agent-emoji">💰</span><div><div class="agent-name">Budget Calculation</div><div class="agent-desc">Calculating your budget in USD</div></div></div>
+          </div>
+
+          <!-- itinerary -->
+          <div class="agent-item" data-agent="itinerary" data-status="pending" role="listitem">
+            <div class="agent-icon-wrap" aria-hidden="true">
+              <span class="status-pending-icon">○</span>
+              <span class="status-running-icon hidden"><svg class="spin-svg" viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" stroke-dasharray="35" stroke-dashoffset="10"><animateTransform attributeName="transform" type="rotate" dur="0.8s" repeatCount="indefinite" from="0 12 12" to="360 12 12"/></circle></svg></span>
+              <span class="status-done-icon hidden">✓</span>
+              <span class="status-error-icon hidden">✗</span>
+            </div>
+            <div class="agent-label-wrap"><span class="agent-emoji">🗓️</span><div><div class="agent-name">Itinerary Creation</div><div class="agent-desc">Building your personalised plan</div></div></div>
+          </div>
+
+        </div><!-- /agent-list -->
+      </div>
+
+      <!-- Live Activity Log -->
+      <div class="activity-log-panel">
+        <p class="panel-title">Live Activity</p>
+        <div class="activity-log" id="activity-log" role="log" aria-live="polite">
+          <div class="activity-log-empty" id="activity-log-empty">
+            <div class="activity-spinner" aria-hidden="true"></div>
+            <span>Waiting for agents to start…</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /progress-layout -->
+  </div>
+</section>
+
+<!-- ═══════════════ SECTION 3: RESULTS DASHBOARD ═══════════════ -->
+<section id="results-section" hidden aria-label="Trip results">
+  <div class="container">
+
+    <div class="results-header">
+      <div class="results-title-area">
+        <h2 class="results-heading">Trip to <span id="result-destination-name" class="gradient-text">—</span></h2>
+        <div class="results-meta" id="results-meta"></div>
+      </div>
+      <div class="results-actions">
+        <button class="btn btn-outline btn-sm" id="open-copilot-btn">🤖 Ask Copilot</button>
+        <button class="btn btn-ghost btn-sm" id="plan-new-trip-btn">+ New Trip</button>
+      </div>
+    </div>
+
+    <!-- Bento Grid -->
+    <div class="bento-grid" id="bento-grid">
+
+      <article class="bento-card bento-destination" id="card-destination" aria-label="Destination">
+        <div id="destination-content"></div>
+      </article>
+
+      <article class="bento-card bento-weather" id="card-weather" aria-label="Weather">
+        <div id="weather-content"></div>
+      </article>
+
+      <article class="bento-card bento-budget" id="card-budget" aria-label="Budget">
+        <div id="budget-content"></div>
+      </article>
+
+      <article class="bento-card bento-flights" id="card-flights" aria-label="Flights">
+        <div id="flights-content"></div>
+      </article>
+
+      <article class="bento-card bento-map" id="card-map" aria-label="Map">
+        <div id="leaflet-map"></div>
+      </article>
+
+      <!-- Trip at a Glance — replaces the broken photo gallery -->
+      <article class="bento-card bento-glance" id="card-glance" aria-label="Trip at a Glance">
+        <div id="glance-content"></div>
+      </article>
+
+      <article class="bento-card bento-itinerary" id="card-itinerary" aria-label="Itinerary">
+        <div id="itinerary-content"></div>
+      </article>
+
+    </div><!-- /bento-grid -->
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════════ COPILOT PANEL ═══════════════ -->
+<button id="copilot-fab" class="copilot-fab" hidden aria-label="Open Travel Copilot">🤖</button>
+
+<div id="copilot-panel" class="copilot-panel" role="complementary" aria-label="AI Travel Copilot" aria-hidden="true" hidden>
+  <div class="copilot-header">
+    <div class="copilot-title">
+      <span class="copilot-icon">🤖</span>
+      <div><div class="copilot-name">Travel Copilot</div><div class="copilot-status"><span class="online-dot"></span> AI-powered assistant</div></div>
+    </div>
+    <button id="close-copilot" class="btn-icon-only" aria-label="Close copilot">✕</button>
+  </div>
+
+  <div class="copilot-quick-actions">
+    <div class="quick-actions-label">Quick questions:</div>
+    <div class="quick-chips" id="quick-chips"></div>
+  </div>
+
+  <div class="copilot-messages" id="copilot-messages" role="log" aria-live="polite">
+    <div class="copilot-welcome">
+      <div class="welcome-avatar">🤖</div>
+      <div class="welcome-bubble">
+        <p>Hi! I'm your Travel Copilot. Ask me anything about your trip — destinations, packing, budgeting, local tips and more!</p>
+        <p class="welcome-note">⚠️ Travel questions only.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="copilot-input-area">
+    <div class="copilot-input-row">
+      <textarea id="copilot-input" class="copilot-textarea" placeholder="Ask about your trip…" rows="1" maxlength="500" aria-label="Message to copilot"></textarea>
+      <button id="copilot-send-btn" class="btn btn-primary btn-icon" disabled aria-label="Send">↑</button>
+    </div>
+    <div class="copilot-disclaimer">Travel questions only · AI may make mistakes</div>
+  </div>
+</div>
+
+<script src="/static/js/api.js?v=7"></script>
+<script src="/static/js/ui.js?v=7"></script>
+<script src="/static/js/copilot.js?v=7"></script>
+<script src="/static/js/app.js?v=7"></script>
+</body>
+</html>
