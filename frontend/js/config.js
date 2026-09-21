@@ -15,6 +15,6 @@
 
 const CONFIG = {
     // ── Change this to your Render URL when deploying frontend to Vercel ──
-    API_BASE: '',   // '' = same origin (local dev / Render full deploy)
+    API_BASE: 'https://travel-verse-multiagent-system-1.onrender.com',   // '' = same origin (local dev / Render full deploy)
                     // 'https://your-app.onrender.com' = split deploy
 };
