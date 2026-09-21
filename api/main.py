@@ -70,9 +70,11 @@ if os.path.isdir(_frontend):
         path = os.path.join(_frontend, "index.html")
         return FileResponse(path, headers={"Cache-Control": _NO_CACHE})
 
-    @app.get("/static/{file_path:path}", include_in_schema=False)
-    async def serve_static(file_path: str):
-        abs_path = os.path.join(_frontend, file_path)
+    @app.get("/{folder}/{file_path:path}", include_in_schema=False)
+    async def serve_static(folder: str, file_path: str):
+        if folder not in ["css", "js", "images"]:
+            return Response(content="Not Found", status_code=404)
+        abs_path = os.path.join(_frontend, folder, file_path)
         if not os.path.isfile(abs_path):
             return Response(content="Not Found", status_code=404)
         ext = os.path.splitext(abs_path)[1].lower()
